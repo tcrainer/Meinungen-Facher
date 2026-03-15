@@ -1,0 +1,478 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Trophy, Clock, Users, Play, CheckCircle, XCircle, DollarSign, RotateCcw } from 'lucide-react';
+
+// Alle bereitgestellten Sätze mit britischer Rechtschreibung im Englischen
+const SENTENCES = [
+  { de: "Ich liebe Mathe, denn es ist einfach.", en: "I love maths, because it is easy." },
+  { de: "Ich hasse Informatik, denn es ist langweilig.", en: "I hate IT, because it is boring." },
+  { de: "Mein Lieblingsfach ist Technik, denn es ist nützlich.", en: "My favourite subject is technology, because it is useful." },
+  { de: "Ich mag Naturwissenschaften, denn es ist faszinierend.", en: "I like sciences, because it is fascinating." },
+  { de: "Ich mag Biologie am liebsten, denn es ist interessant.", en: "I like biology best, because it is interesting." },
+  { de: "Ich mag Chemie am wenigsten, denn es ist furchtbar.", en: "I like chemistry the least, because it is awful." },
+  { de: "Ich mag Physik nicht gern, denn es ist schwierig.", en: "I don't like physics, because it is difficult." },
+  { de: "Ich liebe die Fremdsprache, denn es ist wichtig.", en: "I love the foreign language, because it is important." },
+  { de: "Ich hasse Englisch, denn es ist unwichtig.", en: "I hate English, because it is unimportant." },
+  { de: "Mein Lieblingsfach ist Latein, denn es macht Spaß.", en: "My favourite subject is Latin, because it is fun." },
+  { de: "Ich mag Geisteswissenschaften, denn es ist leicht.", en: "I like humanities, because it is easy." },
+  { de: "Ich mag Geschichte am wenigsten, denn es macht nicht Spaß.", en: "I like history the least, because it isn't fun." },
+  { de: "Ich mag Sozialkunde lieber, denn es ist nützlich.", en: "I prefer social studies, because it is useful." },
+  { de: "Ich hasse Politik, denn es ist nutzlos.", en: "I hate politics, because it is useless." },
+  { de: "Ich liebe Bürgerkunde, denn es ist interessant.", en: "I love civil studies, because it is interesting." },
+  { de: "Mein Lieblingsfach ist Wirtschaft, denn es ist faszinierend.", en: "My favourite subject is economy, because it is fascinating." },
+  { de: "Ich mag Erdkunde, denn es ist einfach.", en: "I like geography, because it is easy." },
+  { de: "Ich mag Religion nicht gern, denn es ist langweilig.", en: "I don't like religion, because it is boring." },
+  { de: "Ich hasse Ethik, denn es ist schwierig.", en: "I hate ethics, because it is difficult." },
+  { de: "Ich liebe Kunst, denn es macht Spaß.", en: "I love art, because it is fun." },
+  { de: "Mein Lieblingsfach ist Musik, denn es ist wichtig.", en: "My favourite subject is music, because it is important." },
+  { de: "Ich mag Werken, denn es ist nützlich.", en: "I like DT, because it is useful." },
+  { de: "Ich mag Theater am liebsten, denn es ist faszinierend.", en: "I like drama best, because it is fascinating." },
+  { de: "Ich hasse Sport, denn es macht nicht Spaß.", en: "I hate PE, because it isn't fun." },
+  { de: "Ich liebe Mathe, denn es ist nützlich.", en: "I love maths, because it is useful." },
+  { de: "Ich mag Informatik nicht gern, denn es ist schwer.", en: "I don't like IT, because it is difficult." },
+  { de: "Mein Lieblingsfach ist Biologie, denn es ist leicht.", en: "My favourite subject is biology, because it is easy." },
+  { de: "Ich hasse Chemie, denn es ist nutzlos.", en: "I hate chemistry, because it is useless." },
+  { de: "Ich mag Physik, denn es ist interessant.", en: "I like physics, because it is interesting." },
+  { de: "Ich mag Englisch am wenigsten, denn es ist furchtbar.", en: "I like English the least, because it is awful." },
+  { de: "Ich liebe Latein, denn es ist faszinierend.", en: "I love Latin, because it is fascinating." },
+  { de: "Ich hasse Geschichte, denn es ist langweilig.", en: "I hate history, because it is boring." },
+  { de: "Mein Lieblingsfach ist Sozialkunde, denn es ist wichtig.", en: "My favourite subject is social studies, because it is important." },
+  { de: "Ich mag Politik, denn es macht Spaß.", en: "I like politics, because it is fun." },
+  { de: "Ich mag Wirtschaft nicht gern, denn es ist unwichtig.", en: "I don't like economy, because it is unimportant." },
+  { de: "Ich liebe Erdkunde, denn es ist nützlich.", en: "I love geography, because it is useful." },
+  { de: "Ich hasse Religion, denn es ist furchtbar.", en: "I hate religion, because it is awful." },
+  { de: "Mein Lieblingsfach ist Kunst, denn es ist einfach.", en: "My favourite subject is art, because it is easy." },
+  { de: "Ich mag Musik, denn es ist interessant.", en: "I like music, because it is interesting." },
+  { de: "Ich mag Werken am wenigsten, denn es ist schwer.", en: "I like DT the least, because it is difficult." },
+  { de: "Ich liebe Theater, denn es macht Spaß.", en: "I love drama, because it is fun." },
+  { de: "Ich hasse Sport, denn es ist unwichtig.", en: "I hate PE, because it is unimportant." },
+  { de: "Ich mag Mathe lieber, denn es ist wichtig.", en: "I prefer maths, because it is important." },
+  { de: "Ich mag Informatik weniger, denn es ist langweilig.", en: "I like IT less, because it is boring." },
+  { de: "Mein Lieblingsfach ist Technik, denn es ist faszinierend.", en: "My favourite subject is technology, because it is fascinating." },
+  { de: "Ich liebe Naturwissenschaften, denn es macht Spaß.", en: "I love sciences, because it is fun." },
+  { de: "Ich hasse Biologie, denn es ist furchtbar.", en: "I hate biology, because it is awful." },
+  { de: "Ich mag Chemie, denn es ist leicht.", en: "I like chemistry, because it is easy." },
+  { de: "Ich mag Physik am liebsten, denn es ist nützlich.", en: "I like physics best, because it is useful." },
+  { de: "Ich mag die Fremdsprache nicht gern, denn es ist nutzlos.", en: "I don't like the foreign language, because it is useless." },
+  { de: "Ich liebe Englisch, denn die Lehrerin ist freundlich.", en: "I love English, because the teacher is friendly." },
+  { de: "Ich hasse Latein, denn der Lehrer ist streng.", en: "I hate Latin, because the teacher is strict." },
+  { de: "Mein Lieblingsfach ist Geschichte, denn der Lehrer ist geduldig.", en: "My favourite subject is history, because the teacher is patient." },
+  { de: "Ich mag Sozialkunde, denn die Lehrerin ist gerecht.", en: "I like social studies, because the teacher is fair." },
+  { de: "Ich mag Politik am wenigsten, denn der Lehrer ist ungerecht.", en: "I like politics the least, because the teacher is unfair." },
+  { de: "Ich liebe Bürgerkunde, denn die Lehrerin ist humorvoll.", en: "I love civil studies, because the teacher is humorous." },
+  { de: "Ich hasse Wirtschaft, denn der Lehrer ist ungeduldig.", en: "I hate economy, because the teacher is impatient." },
+  { de: "Mein Lieblingsfach ist Erdkunde, denn der Lehrer ist humorlos.", en: "My favourite subject is geography, because the teacher is humourless." },
+  { de: "Ich mag Ethik, denn die Lehrerin ist freundlich.", en: "I like ethics, because the teacher is friendly." },
+  { de: "Ich mag Kunst nicht gern, denn der Lehrer ist streng.", en: "I don't like art, because the teacher is strict." }
+];
+
+// Mögliche Geldbeträge für das Raster (in Euro/Pfund)
+const REWARD_VALUES = [50, 100, 200, 500, 1000, 2000, 5000];
+
+// Spielerfarben für ein lebendiges Design
+const PLAYER_COLORS = ['bg-blue-500', 'bg-red-500', 'bg-green-500'];
+const PLAYER_BORDER_COLORS = ['border-blue-500', 'border-red-500', 'border-green-500'];
+const PLAYER_TEXT_COLORS = ['text-blue-500', 'text-red-500', 'text-green-500'];
+
+export default function App() {
+  const [gameState, setGameState] = useState('setup'); // setup, playing, gameover
+  const [players, setPlayers] = useState([{ name: '', score: 0, correctAnswers: 0 }, { name: '', score: 0, correctAnswers: 0 }]);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 Minuten = 300 Sekunden
+  const [currentSentence, setCurrentSentence] = useState(null);
+  const [isFlipped, setIsFlipped] = useState(false);
+  
+  const [grid, setGrid] = useState([]);
+  const [showGrid, setShowGrid] = useState(false);
+  const [isRevealing, setIsRevealing] = useState(false);
+
+  // Hilfsfunktion: Formatierung der Zeit
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  // Erstelle das Spielfeld mit zufälligen Werten
+  const initializeGrid = () => {
+    const newGrid = Array(48).fill(null).map((_, index) => {
+      // 10% Chance auf einen Jackpot, ansonsten normale Werte
+      const isJackpot = Math.random() > 0.9;
+      const value = isJackpot 
+        ? REWARD_VALUES[REWARD_VALUES.length - 1] 
+        : REWARD_VALUES[Math.floor(Math.random() * (REWARD_VALUES.length - 2))];
+      
+      return {
+        id: index,
+        value: value,
+        revealed: false,
+        claimedBy: null
+      };
+    });
+    // Raster mischen
+    return newGrid.sort(() => Math.random() - 0.5);
+  };
+
+  // Nächste Karte ziehen
+  const drawNextCard = useCallback(() => {
+    const randomIndex = Math.floor(Math.random() * SENTENCES.length);
+    setCurrentSentence(SENTENCES[randomIndex]);
+    setIsFlipped(false);
+  }, []);
+
+  // Spiel starten
+  const startGame = () => {
+    const validPlayers = players.filter(p => p.name.trim() !== '');
+    if (validPlayers.length < 2) {
+      alert('Bitte geben Sie mindestens zwei Spielernamen ein.');
+      return;
+    }
+    setPlayers(validPlayers.map(p => ({ ...p, score: 0, correctAnswers: 0 })));
+    setGrid(initializeGrid());
+    setGameState('playing');
+    setTimeLeft(300);
+    setCurrentPlayerIndex(0);
+    setShowGrid(false);
+    drawNextCard();
+  };
+
+  // Timer-Logik
+  useEffect(() => {
+    let timer;
+    if (gameState === 'playing' && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0 && gameState === 'playing') {
+      setGameState('gameover');
+    }
+    return () => clearInterval(timer);
+  }, [gameState, timeLeft]);
+
+  // Nächster Zug
+  const nextTurn = () => {
+    setCurrentPlayerIndex((prev) => (prev + 1) % players.length);
+    drawNextCard();
+  };
+
+  // Antwort verarbeiten
+  const handleAnswer = (correct) => {
+    if (correct) {
+      const newPlayers = [...players];
+      newPlayers[currentPlayerIndex].correctAnswers += 1;
+      setPlayers(newPlayers);
+      setShowGrid(true);
+    } else {
+      nextTurn();
+    }
+  };
+
+  // Klick auf das Raster verarbeiten
+  const handleTileClick = (index) => {
+    if (grid[index].revealed || isRevealing) return;
+
+    setIsRevealing(true);
+    
+    // Kachel aufdecken
+    const newGrid = [...grid];
+    newGrid[index].revealed = true;
+    newGrid[index].claimedBy = currentPlayerIndex;
+    setGrid(newGrid);
+
+    // Punkte aktualisieren
+    const wonAmount = newGrid[index].value;
+    const newPlayers = [...players];
+    newPlayers[currentPlayerIndex].score += wonAmount;
+    setPlayers(newPlayers);
+
+    // Kurze Pause, damit Spieler den Gewinn sehen, dann nächste Runde
+    setTimeout(() => {
+      setShowGrid(false);
+      setIsRevealing(false);
+      
+      // Prüfen ob noch Kacheln übrig sind
+      if (newGrid.every(tile => tile.revealed)) {
+        setGameState('gameover');
+      } else {
+        nextTurn();
+      }
+    }, 2000);
+  };
+
+  // Spieler hinzufügen/entfernen (Setup)
+  const updatePlayerName = (index, name) => {
+    const newPlayers = [...players];
+    newPlayers[index].name = name;
+    setPlayers(newPlayers);
+  };
+
+  const addPlayer = () => {
+    if (players.length < 3) {
+      setPlayers([...players, { name: '', score: 0, correctAnswers: 0 }]);
+    }
+  };
+
+  const removePlayer = (index) => {
+    if (players.length > 2) {
+      const newPlayers = [...players];
+      newPlayers.splice(index, 1);
+      setPlayers(newPlayers);
+    }
+  };
+
+  // --- ANSICHT: SETUP ---
+  if (gameState === 'setup') {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white font-sans">
+        <div className="max-w-md w-full bg-slate-800 rounded-3xl shadow-2xl p-8 border-4 border-slate-700">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
+              Wortschatz-Jagd
+            </h1>
+            <p className="text-slate-400">Übersetze laut und gewinne virtuelles Geld!</p>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {players.map((player, idx) => (
+              <div key={idx} className="flex items-center space-x-2">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${PLAYER_COLORS[idx]}`}>
+                  {idx + 1}
+                </div>
+                <input
+                  type="text"
+                  placeholder={`Name von Spieler ${idx + 1}`}
+                  className="flex-1 bg-slate-700 border-2 border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-colors"
+                  value={player.name}
+                  onChange={(e) => updatePlayerName(idx, e.target.value)}
+                  maxLength={15}
+                />
+                {players.length > 2 && (
+                  <button onClick={() => removePlayer(idx)} className="text-red-400 hover:text-red-300 p-2">
+                    <XCircle size={24} />
+                  </button>
+                )}
+              </div>
+            ))}
+            
+            {players.length < 3 && (
+              <button 
+                onClick={addPlayer}
+                className="w-full py-3 border-2 border-dashed border-slate-600 rounded-xl text-slate-400 hover:text-white hover:border-slate-400 transition-colors flex items-center justify-center space-x-2"
+              >
+                <Users size={20} />
+                <span>Dritten Spieler hinzufügen</span>
+              </button>
+            )}
+          </div>
+
+          <button 
+            onClick={startGame}
+            className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-xl shadow-lg transform transition active:scale-95 flex items-center justify-center space-x-2"
+          >
+            <Play size={24} />
+            <span>Spiel Starten</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- ANSICHT: SPIELEN ---
+  if (gameState === 'playing') {
+    const currentPlayer = players[currentPlayerIndex];
+
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col p-4 md:p-8 text-white font-sans">
+        {/* Header / HUD */}
+        <header className="flex flex-wrap justify-between items-center bg-slate-800 p-4 rounded-2xl shadow-lg mb-8 border-b-4 border-slate-700">
+          <div className="flex items-center space-x-4">
+            <div className={`flex items-center space-x-2 bg-slate-900 px-4 py-2 rounded-xl border-2 ${timeLeft < 60 ? 'border-red-500 text-red-500 animate-pulse' : 'border-slate-700'}`}>
+              <Clock size={24} />
+              <span className="text-2xl font-black font-mono">{formatTime(timeLeft)}</span>
+            </div>
+          </div>
+
+          {/* Spieler Punktestände */}
+          <div className="flex space-x-4 mt-4 md:mt-0">
+            {players.map((p, idx) => (
+              <div 
+                key={idx} 
+                className={`flex flex-col items-center px-4 py-2 rounded-xl border-2 transition-all ${
+                  idx === currentPlayerIndex 
+                    ? `${PLAYER_BORDER_COLORS[idx]} bg-slate-800 scale-110 shadow-lg shadow-${PLAYER_COLORS[idx].split('-')[1]}-500/20` 
+                    : 'border-slate-700 bg-slate-900 opacity-60'
+                }`}
+              >
+                <span className={`text-sm font-bold ${PLAYER_TEXT_COLORS[idx]}`}>{p.name}</span>
+                <span className="text-xl font-black">£{p.score}</span>
+                <div className="flex items-center text-xs text-green-400 mt-1" title="Richtige Antworten">
+                  <CheckCircle size={12} className="mr-1" /> {p.correctAnswers}
+                </div>
+              </div>
+            ))}
+          </div>
+        </header>
+
+        {/* Hauptbereich */}
+        <main className="flex-1 flex flex-col items-center justify-center">
+          
+          {/* Aktueller Spieler Anzeige */}
+          <div className="mb-6 text-center animate-bounce">
+            <span className="text-slate-400 text-lg uppercase tracking-widest">Am Zug:</span>
+            <h2 className={`text-4xl font-black ${PLAYER_TEXT_COLORS[currentPlayerIndex]}`}>
+              {currentPlayer.name}
+            </h2>
+          </div>
+
+          {!showGrid ? (
+            /* LERNKARTEN-MODUS */
+            <div className="w-full max-w-2xl flex flex-col items-center perspective-1000">
+              <p className="text-slate-400 mb-4 font-medium text-center">
+                Übersetze diesen Satz laut ins Deutsche, klicke dann auf die Karte!
+              </p>
+              
+              {/* Die Kartecke (Flip-Animation via CSS Klassen simuliert) */}
+              <div 
+                onClick={() => !isFlipped && setIsFlipped(true)}
+                className={`w-full bg-slate-800 rounded-3xl p-10 md:p-16 cursor-pointer transform transition-all duration-500 border-4 ${isFlipped ? PLAYER_BORDER_COLORS[currentPlayerIndex] : 'border-slate-600 hover:border-slate-500 hover:scale-[1.02]'} shadow-2xl relative flex items-center justify-center min-h-[300px] text-center`}
+              >
+                {!isFlipped ? (
+                  <h3 className="text-3xl md:text-5xl font-bold leading-tight">
+                    {currentSentence?.en}
+                  </h3>
+                ) : (
+                  <div className="flex flex-col items-center space-y-6 animate-fadeIn">
+                    <span className="text-sm font-bold uppercase tracking-wider text-slate-400">Lösung:</span>
+                    <h3 className="text-3xl md:text-4xl font-bold text-green-400 leading-tight">
+                      {currentSentence?.de}
+                    </h3>
+                  </div>
+                )}
+                
+                {!isFlipped && (
+                  <div className="absolute bottom-6 left-0 right-0 text-center opacity-50 text-sm flex justify-center items-center space-x-2">
+                    <RotateCcw size={16} />
+                    <span>Klicken zum Umdrehen</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Feedback-Buttons (Nur sichtbar, wenn Karte umgedreht) */}
+              {isFlipped && (
+                <div className="flex space-x-6 mt-8 w-full">
+                  <button 
+                    onClick={() => handleAnswer(false)}
+                    className="flex-1 py-4 bg-red-600/20 text-red-500 border-2 border-red-500 hover:bg-red-500 hover:text-white rounded-2xl font-bold text-2xl transition-all flex items-center justify-center space-x-2"
+                  >
+                    <XCircle size={28} />
+                    <span>Falsch</span>
+                  </button>
+                  <button 
+                    onClick={() => handleAnswer(true)}
+                    className="flex-1 py-4 bg-green-600/20 text-green-500 border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-2xl font-bold text-2xl transition-all flex items-center justify-center space-x-2"
+                  >
+                    <CheckCircle size={28} />
+                    <span>Richtig!</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* RASTER-MODUS (Belohnung) */
+            <div className="w-full max-w-4xl flex flex-col items-center animate-fadeIn">
+              <div className="text-center mb-6">
+                <h3 className="text-3xl font-black text-yellow-400 mb-2 flex items-center justify-center space-x-2">
+                  <DollarSign size={36} />
+                  <span>Kies ein Feld, {currentPlayer.name}!</span>
+                </h3>
+                <p className="text-slate-400">Hinter jedem Feld versteckt sich ein Geldbetrag.</p>
+              </div>
+
+              <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 md:gap-3 w-full bg-slate-800 p-4 rounded-3xl border-4 border-slate-700 shadow-2xl">
+                {grid.map((tile, index) => (
+                  <button
+                    key={tile.id}
+                    onClick={() => handleTileClick(index)}
+                    disabled={tile.revealed || isRevealing}
+                    className={`aspect-square rounded-xl font-black text-lg md:text-xl flex items-center justify-center transition-all duration-500 transform ${
+                      !tile.revealed 
+                        ? `${PLAYER_COLORS[currentPlayerIndex]} hover:scale-110 shadow-lg cursor-pointer` 
+                        : `bg-slate-900 border-2 ${PLAYER_BORDER_COLORS[tile.claimedBy]} text-yellow-400 scale-95`
+                    }`}
+                  >
+                    {tile.revealed ? `£${tile.value}` : '?'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  // --- ANSICHT: GAME OVER ---
+  if (gameState === 'gameover') {
+    // Sortiere Spieler nach Punkten absteigend
+    const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+    const winner = sortedPlayers[0];
+
+    // Finde den/die Spieler mit den meisten richtigen Antworten
+    const maxCorrect = Math.max(...players.map(p => p.correctAnswers));
+    const topTranslators = players.filter(p => p.correctAnswers === maxCorrect).map(p => p.name);
+
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white font-sans">
+        <div className="max-w-2xl w-full bg-slate-800 rounded-3xl shadow-2xl p-10 border-4 border-yellow-500 text-center relative overflow-hidden">
+          
+          {/* Konfetti-Hintergrund-Effekt (CSS simuliert) */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-yellow-300 via-transparent to-transparent"></div>
+
+          <Trophy size={80} className="mx-auto text-yellow-400 mb-6 animate-bounce" />
+          
+          <h1 className="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+            Zeit abgelaufen!
+          </h1>
+          <p className="text-2xl text-slate-300 mb-6">
+            Der Gewinner ist <span className="font-bold text-white">{winner.name}</span> mit £{winner.score}!
+          </p>
+
+          <div className="bg-slate-700/50 rounded-xl p-4 mb-8 inline-block border border-slate-600">
+            <p className="text-green-400 flex items-center justify-center space-x-2">
+              <CheckCircle size={20} />
+              <span>
+                <strong>Top-Übersetzer ({maxCorrect} richtig):</strong> {topTranslators.join(', ')}
+              </span>
+            </p>
+          </div>
+
+          <div className="flex flex-col space-y-4 mb-10 max-w-md mx-auto w-full">
+            {sortedPlayers.map((p, idx) => (
+              <div key={idx} className={`flex items-center justify-between p-4 rounded-2xl border-2 ${idx === 0 ? 'bg-yellow-500/20 border-yellow-500' : 'bg-slate-700/50 border-slate-600'}`}>
+                <div className="flex items-center space-x-4">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${idx === 0 ? 'bg-yellow-500 text-black' : 'bg-slate-600'}`}>
+                    {idx + 1}
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-xl font-bold">{p.name}</span>
+                    <span className="text-sm text-green-400 flex items-center mt-1"><CheckCircle size={14} className="mr-1"/> {p.correctAnswers} richtig</span>
+                  </div>
+                </div>
+                <span className="text-2xl font-black">£{p.score}</span>
+              </div>
+            ))}
+          </div>
+
+          <button 
+            onClick={() => setGameState('setup')}
+            className="px-8 py-4 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xl transition flex items-center justify-center mx-auto space-x-2"
+          >
+            <RotateCcw size={24} />
+            <span>Neues Spiel starten</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
