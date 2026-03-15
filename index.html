@@ -4,498 +4,472 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wortschatz-Jagd</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --slate-900: #0f172a;
+      --slate-800: #1e293b;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-400: #94a3b8;
+      --slate-300: #cbd5e1;
+      --blue-500: #3b82f6;
+      --red-500: #ef4444;
+      --green-500: #22c55e;
+      --green-400: #4ade80;
+      --purple-400: #c084fc;
+      --purple-600: #9333ea;
+      --pink-600: #db2777;
+      --blue-600: #2563eb;
+      --yellow-400: #facc15;
+      --yellow-500: #eab308;
+      --orange-500: #f97316;
     }
-    .animate-fadeIn {
-      animation: fadeIn 0.5s ease-out;
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--slate-900);
+      color: #fff;
+      min-height: 100vh;
     }
+
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: flex; }
+
+    /* SETUP */
+    #setup-screen {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .setup-box {
+      max-width: 28rem;
+      width: 100%;
+      background: var(--slate-800);
+      border-radius: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,.5);
+      padding: 2rem;
+      border: 4px solid var(--slate-700);
+    }
+
+    .setup-title { text-align: center; margin-bottom: 2rem; }
+
+    .setup-title h1 {
+      font-size: 2.25rem;
+      font-weight: 900;
+      background: linear-gradient(to right, var(--purple-400), var(--pink-600));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: .5rem;
+    }
+
+    .setup-title p { color: var(--slate-400); }
+
+    .player-row { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; }
+
+    .player-badge {
+      width: 2.5rem; height: 2.5rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; flex-shrink: 0; color: #fff;
+    }
+
+    .player-badge.p0 { background: var(--blue-500); }
+    .player-badge.p1 { background: var(--red-500); }
+    .player-badge.p2 { background: var(--green-500); }
+
+    .player-input {
+      flex: 1; background: var(--slate-700); border: 2px solid var(--slate-600);
+      border-radius: .75rem; padding: .75rem 1rem; color: #fff; font-size: 1rem;
+      outline: none; transition: border-color .2s;
+    }
+
+    .player-input:focus { border-color: var(--purple-600); }
+
+    .remove-btn {
+      background: none; border: none; color: var(--red-500);
+      cursor: pointer; padding: .5rem; font-size: 1.5rem; line-height: 1;
+    }
+
+    .add-player-btn {
+      width: 100%; padding: .75rem; border: 2px dashed var(--slate-600);
+      border-radius: .75rem; background: none; color: var(--slate-400);
+      cursor: pointer; font-size: 1rem; margin-bottom: 2rem; transition: all .2s;
+    }
+
+    .add-player-btn:hover { color: #fff; border-color: var(--slate-400); }
+
+    .start-btn {
+      width: 100%; padding: 1rem;
+      background: linear-gradient(to right, var(--purple-600), var(--blue-600));
+      border: none; border-radius: .75rem; color: #fff;
+      font-weight: 700; font-size: 1.25rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,.3); transition: transform .1s;
+    }
+
+    .start-btn:active { transform: scale(.95); }
+
+    /* PLAYING */
+    #play-screen { flex-direction: column; padding: 1rem; }
+    @media (min-width: 768px) { #play-screen { padding: 2rem; } }
+
+    .hud {
+      display: flex; flex-wrap: wrap; justify-content: space-between;
+      align-items: center; background: var(--slate-800); padding: 1rem;
+      border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,.3);
+      margin-bottom: 2rem; border-bottom: 4px solid var(--slate-700);
+    }
+
+    .timer-box {
+      display: flex; align-items: center; gap: .5rem;
+      background: var(--slate-900); padding: .5rem 1rem;
+      border-radius: .75rem; border: 2px solid var(--slate-700);
+      font-family: 'Courier New', monospace; font-size: 1.5rem; font-weight: 900;
+    }
+
+    .timer-box.urgent { border-color: var(--red-500); color: var(--red-500); animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+
+    .scores-row { display: flex; gap: 1rem; margin-top: 1rem; }
+    @media (min-width: 768px) { .scores-row { margin-top: 0; } }
+
+    .score-card {
+      display: flex; flex-direction: column; align-items: center;
+      padding: .5rem 1rem; border-radius: .75rem;
+      border: 2px solid var(--slate-700); background: var(--slate-900);
+      opacity: .6; transition: all .3s;
+    }
+
+    .score-card.active-player { opacity: 1; transform: scale(1.1); box-shadow: 0 10px 15px -3px rgba(0,0,0,.3); background: var(--slate-800); }
+    .score-card.active-player.p0 { border-color: var(--blue-500); }
+    .score-card.active-player.p1 { border-color: var(--red-500); }
+    .score-card.active-player.p2 { border-color: var(--green-500); }
+
+    .score-name { font-size: .875rem; font-weight: 700; }
+    .score-name.p0 { color: var(--blue-500); }
+    .score-name.p1 { color: var(--red-500); }
+    .score-name.p2 { color: var(--green-500); }
+
+    .score-value { font-size: 1.25rem; font-weight: 900; }
+
+    .score-correct { display: flex; align-items: center; gap: .25rem; font-size: .75rem; color: var(--green-400); margin-top: .25rem; }
+
+    .play-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+    .current-turn { margin-bottom: 1.5rem; text-align: center; animation: bounce 1s infinite; }
+
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+    .current-turn .label { color: var(--slate-400); font-size: 1.125rem; text-transform: uppercase; letter-spacing: .15em; }
+
+    .current-turn .name { font-size: 2.25rem; font-weight: 900; }
+    .current-turn .name.p0 { color: var(--blue-500); }
+    .current-turn .name.p1 { color: var(--red-500); }
+    .current-turn .name.p2 { color: var(--green-500); }
+
+    .card-area { width: 100%; max-width: 42rem; display: flex; flex-direction: column; align-items: center; }
+    .card-hint { color: var(--slate-400); margin-bottom: 1rem; font-weight: 500; text-align: center; }
+
+    .flashcard {
+      width: 100%; background: var(--slate-800); border-radius: 1.5rem;
+      padding: 2.5rem; cursor: pointer; transition: all .5s;
+      border: 4px solid var(--slate-600); box-shadow: 0 25px 50px -12px rgba(0,0,0,.5);
+      position: relative; display: flex; align-items: center; justify-content: center;
+      min-height: 300px; text-align: center;
+    }
+
+    @media (min-width: 768px) { .flashcard { padding: 4rem; } }
+    .flashcard:not(.flipped):hover { border-color: #64748b; transform: scale(1.02); }
+    .flashcard.flipped.p0 { border-color: var(--blue-500); }
+    .flashcard.flipped.p1 { border-color: var(--red-500); }
+    .flashcard.flipped.p2 { border-color: var(--green-500); }
+
+    .flashcard .sentence { font-size: 1.875rem; font-weight: 700; line-height: 1.3; }
+    @media (min-width: 768px) { .flashcard .sentence { font-size: 2.5rem; } }
+
+    .flashcard .solution-label { font-size: .875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--slate-400); margin-bottom: 1rem; }
+
+    .flashcard .solution { font-size: 1.875rem; font-weight: 700; color: var(--green-400); line-height: 1.3; animation: fadeIn .5s ease-out; }
+    @media (min-width: 768px) { .flashcard .solution { font-size: 2rem; } }
+
+    .flip-hint { position: absolute; bottom: 1.5rem; left: 0; right: 0; text-align: center; opacity: .5; font-size: .875rem; display: flex; justify-content: center; align-items: center; gap: .5rem; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .answer-buttons { display: flex; gap: 1.5rem; margin-top: 2rem; width: 100%; animation: fadeIn .5s ease-out; }
+
+    .answer-btn {
+      flex: 1; padding: 1rem; border-radius: 1rem; font-weight: 700;
+      font-size: 1.5rem; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: .5rem; transition: all .2s; border: 2px solid;
+    }
+
+    .answer-btn.wrong { background: rgba(239,68,68,.15); color: var(--red-500); border-color: var(--red-500); }
+    .answer-btn.wrong:hover { background: var(--red-500); color: #fff; }
+    .answer-btn.correct { background: rgba(34,197,94,.15); color: var(--green-500); border-color: var(--green-500); }
+    .answer-btn.correct:hover { background: var(--green-500); color: #fff; }
+
+    .grid-area { width: 100%; max-width: 56rem; display: flex; flex-direction: column; align-items: center; animation: fadeIn .5s ease-out; }
+
+    .grid-title { font-size: 1.875rem; font-weight: 900; color: var(--yellow-400); margin-bottom: .5rem; display: flex; align-items: center; gap: .5rem; }
+    .grid-subtitle { color: var(--slate-400); margin-bottom: 1.5rem; }
+
+    .reward-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: .5rem;
+      width: 100%; background: var(--slate-800); padding: 1rem;
+      border-radius: 1.5rem; border: 4px solid var(--slate-700);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,.5);
+    }
+
+    @media (min-width: 640px) { .reward-grid { grid-template-columns: repeat(8, 1fr); gap: .75rem; } }
+
+    .tile {
+      aspect-ratio: 1; border-radius: .75rem; font-weight: 900; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .5s; border: 2px solid transparent; cursor: pointer; color: #fff;
+    }
+
+    @media (min-width: 768px) { .tile { font-size: 1.125rem; } }
+
+    .tile.unrevealed { box-shadow: 0 4px 6px -1px rgba(0,0,0,.3); }
+    .tile.unrevealed:hover { transform: scale(1.1); }
+    .tile.unrevealed.p0 { background: var(--blue-500); }
+    .tile.unrevealed.p1 { background: var(--red-500); }
+    .tile.unrevealed.p2 { background: var(--green-500); }
+
+    .tile.revealed { background: var(--slate-900); color: var(--yellow-400); transform: scale(.95); cursor: default; }
+    .tile.revealed.claimed-p0 { border-color: var(--blue-500); }
+    .tile.revealed.claimed-p1 { border-color: var(--red-500); }
+    .tile.revealed.claimed-p2 { border-color: var(--green-500); }
+
+    /* GAME OVER */
+    #gameover-screen { flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; }
+
+    .gameover-box {
+      max-width: 40rem; width: 100%; background: var(--slate-800);
+      border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,.5);
+      padding: 2.5rem; border: 4px solid var(--yellow-500); text-align: center;
+      position: relative; overflow: hidden;
+    }
+
+    .gameover-box .bg-glow { position: absolute; inset: 0; opacity: .1; pointer-events: none; background: radial-gradient(circle at center, var(--yellow-400), transparent 70%); }
+
+    .trophy-icon { font-size: 5rem; margin-bottom: 1.5rem; animation: bounce 1s infinite; display: inline-block; }
+
+    .gameover-title {
+      font-size: 2.5rem; font-weight: 900;
+      background: linear-gradient(to right, var(--yellow-400), var(--orange-500));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: .5rem;
+    }
+
+    .gameover-subtitle { font-size: 1.25rem; color: var(--slate-300); margin-bottom: 1.5rem; }
+
+    .top-translator { background: rgba(51,65,85,.5); border-radius: .75rem; padding: 1rem; margin-bottom: 2rem; display: inline-block; border: 1px solid var(--slate-600); color: var(--green-400); }
+
+    .final-scores { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2.5rem; max-width: 28rem; margin-left: auto; margin-right: auto; width: 100%; }
+
+    .final-row { display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-radius: 1rem; border: 2px solid var(--slate-600); background: rgba(51,65,85,.5); }
+    .final-row.winner { background: rgba(234,179,8,.15); border-color: var(--yellow-500); }
+
+    .final-row .rank { width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; background: var(--slate-600); margin-right: 1rem; flex-shrink: 0; }
+    .final-row.winner .rank { background: var(--yellow-500); color: #000; }
+
+    .final-row .info { flex: 1; text-align: left; }
+    .final-row .info .pname { font-size: 1.25rem; font-weight: 700; }
+    .final-row .info .pcorrect { font-size: .875rem; color: var(--green-400); margin-top: .25rem; }
+    .final-row .pscore { font-size: 1.5rem; font-weight: 900; }
+
+    .restart-btn {
+      padding: 1rem 2rem; background: var(--slate-700); border: none;
+      border-radius: .75rem; color: #fff; font-weight: 700; font-size: 1.25rem;
+      cursor: pointer; display: inline-flex; align-items: center; gap: .5rem; transition: background .2s;
+    }
+
+    .restart-btn:hover { background: var(--slate-600); }
   </style>
 </head>
 <body>
-  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+<!-- SETUP -->
+<div id="setup-screen" class="screen active">
+  <div class="setup-box">
+    <div class="setup-title">
+      <h1>Wortschatz-Jagd</h1>
+      <p>Übersetze laut und gewinne virtuelles Geld!</p>
+    </div>
+    <div id="player-list"></div>
+    <button id="add-player-btn" class="add-player-btn">&#x2b; Dritten Spieler hinzufügen</button>
+    <button class="start-btn" id="start-btn">&#9654; Spiel Starten</button>
+  </div>
+</div>
 
-    /* Simple icon components using Lucide */
-    function Trophy({ size = 24, className = '' }) {
-      return <svg className={className} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
-    }
-    function Clock({ size = 24, className = '' }) {
-      return <svg className={className} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-    }
-    function Users({ size = 24, className = '' }) {
-      return <svg className={className} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
-    }
-    function Play({ size = 24, className = '' }) {
-      return <svg className={className} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>;
-    }
-    function CheckCircle({ size = 24, className = '' }) {
-      return <svg className={className} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>;
-    }
-    function XCircle({ size = 24, className = '' }) {
-      return <svg className={className} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>;
-    }
-    function DollarSign({ size = 24, className = '' }) {
-      return <svg className={className} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
-    }
-    function RotateCcw({ size = 24, className = '' }) {
-      return <svg className={className} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
-    }
+<!-- PLAYING -->
+<div id="play-screen" class="screen">
+  <div class="hud">
+    <div class="timer-box" id="timer-box">
+      <span>&#128339;</span>
+      <span id="timer-display">5:00</span>
+    </div>
+    <div class="scores-row" id="scores-row"></div>
+  </div>
+  <div class="play-main">
+    <div class="current-turn">
+      <div class="label">Am Zug:</div>
+      <div class="name" id="turn-name"></div>
+    </div>
+    <div id="card-mode" class="card-area">
+      <p class="card-hint">Übersetze diesen Satz laut ins Deutsche, klicke dann auf die Karte!</p>
+      <div class="flashcard" id="flashcard">
+        <div id="card-front">
+          <div class="sentence" id="card-en"></div>
+          <div class="flip-hint" id="flip-hint">&#8635; Klicken zum Umdrehen</div>
+        </div>
+        <div id="card-back" style="display:none;">
+          <div class="back-english" id="back-en" style="font-size:1.25rem;color:var(--slate-400);margin-bottom:1.5rem;line-height:1.4;"></div>
+          <div class="solution-label">Lösung:</div>
+          <div class="solution" id="card-de"></div>
+        </div>
+      </div>
+      <div class="answer-buttons" id="answer-buttons" style="display:none;">
+        <button class="answer-btn wrong" id="btn-wrong">&#10060; Falsch</button>
+        <button class="answer-btn correct" id="btn-correct">&#10004; Richtig!</button>
+      </div>
+    </div>
+    <div id="grid-mode" class="grid-area" style="display:none;">
+      <div style="text-align:center; margin-bottom:1.5rem;">
+        <div class="grid-title">&#128176; Wähle ein Feld, <span id="grid-player-name"></span>!</div>
+        <div class="grid-subtitle">Hinter jedem Feld versteckt sich ein Geldbetrag.</div>
+      </div>
+      <div class="reward-grid" id="reward-grid"></div>
+    </div>
+  </div>
+</div>
 
-    // Alle bereitgestellten Sätze mit britischer Rechtschreibung im Englischen
-    const SENTENCES = [
-      { de: "Ich liebe Mathe, denn es ist einfach.", en: "I love maths, because it is easy." },
-      { de: "Ich hasse Informatik, denn es ist langweilig.", en: "I hate IT, because it is boring." },
-      { de: "Mein Lieblingsfach ist Technik, denn es ist nützlich.", en: "My favourite subject is technology, because it is useful." },
-      { de: "Ich mag Naturwissenschaften, denn es ist faszinierend.", en: "I like sciences, because it is fascinating." },
-      { de: "Ich mag Biologie am liebsten, denn es ist interessant.", en: "I like biology best, because it is interesting." },
-      { de: "Ich mag Chemie am wenigsten, denn es ist furchtbar.", en: "I like chemistry the least, because it is awful." },
-      { de: "Ich mag Physik nicht gern, denn es ist schwierig.", en: "I don't like physics, because it is difficult." },
-      { de: "Ich liebe die Fremdsprache, denn es ist wichtig.", en: "I love the foreign language, because it is important." },
-      { de: "Ich hasse Englisch, denn es ist unwichtig.", en: "I hate English, because it is unimportant." },
-      { de: "Mein Lieblingsfach ist Latein, denn es macht Spaß.", en: "My favourite subject is Latin, because it is fun." },
-      { de: "Ich mag Geisteswissenschaften, denn es ist leicht.", en: "I like humanities, because it is easy." },
-      { de: "Ich mag Geschichte am wenigsten, denn es macht nicht Spaß.", en: "I like history the least, because it isn't fun." },
-      { de: "Ich mag Sozialkunde lieber, denn es ist nützlich.", en: "I prefer social studies, because it is useful." },
-      { de: "Ich hasse Politik, denn es ist nutzlos.", en: "I hate politics, because it is useless." },
-      { de: "Ich liebe Bürgerkunde, denn es ist interessant.", en: "I love civil studies, because it is interesting." },
-      { de: "Mein Lieblingsfach ist Wirtschaft, denn es ist faszinierend.", en: "My favourite subject is economy, because it is fascinating." },
-      { de: "Ich mag Erdkunde, denn es ist einfach.", en: "I like geography, because it is easy." },
-      { de: "Ich mag Religion nicht gern, denn es ist langweilig.", en: "I don't like religion, because it is boring." },
-      { de: "Ich hasse Ethik, denn es ist schwierig.", en: "I hate ethics, because it is difficult." },
-      { de: "Ich liebe Kunst, denn es macht Spaß.", en: "I love art, because it is fun." },
-      { de: "Mein Lieblingsfach ist Musik, denn es ist wichtig.", en: "My favourite subject is music, because it is important." },
-      { de: "Ich mag Werken, denn es ist nützlich.", en: "I like DT, because it is useful." },
-      { de: "Ich mag Theater am liebsten, denn es ist faszinierend.", en: "I like drama best, because it is fascinating." },
-      { de: "Ich hasse Sport, denn es macht nicht Spaß.", en: "I hate PE, because it isn't fun." },
-      { de: "Ich liebe Mathe, denn es ist nützlich.", en: "I love maths, because it is useful." },
-      { de: "Ich mag Informatik nicht gern, denn es ist schwer.", en: "I don't like IT, because it is difficult." },
-      { de: "Mein Lieblingsfach ist Biologie, denn es ist leicht.", en: "My favourite subject is biology, because it is easy." },
-      { de: "Ich hasse Chemie, denn es ist nutzlos.", en: "I hate chemistry, because it is useless." },
-      { de: "Ich mag Physik, denn es ist interessant.", en: "I like physics, because it is interesting." },
-      { de: "Ich mag Englisch am wenigsten, denn es ist furchtbar.", en: "I like English the least, because it is awful." },
-      { de: "Ich liebe Latein, denn es ist faszinierend.", en: "I love Latin, because it is fascinating." },
-      { de: "Ich hasse Geschichte, denn es ist langweilig.", en: "I hate history, because it is boring." },
-      { de: "Mein Lieblingsfach ist Sozialkunde, denn es ist wichtig.", en: "My favourite subject is social studies, because it is important." },
-      { de: "Ich mag Politik, denn es macht Spaß.", en: "I like politics, because it is fun." },
-      { de: "Ich mag Wirtschaft nicht gern, denn es ist unwichtig.", en: "I don't like economy, because it is unimportant." },
-      { de: "Ich liebe Erdkunde, denn es ist nützlich.", en: "I love geography, because it is useful." },
-      { de: "Ich hasse Religion, denn es ist furchtbar.", en: "I hate religion, because it is awful." },
-      { de: "Mein Lieblingsfach ist Kunst, denn es ist einfach.", en: "My favourite subject is art, because it is easy." },
-      { de: "Ich mag Musik, denn es ist interessant.", en: "I like music, because it is interesting." },
-      { de: "Ich mag Werken am wenigsten, denn es ist schwer.", en: "I like DT the least, because it is difficult." },
-      { de: "Ich liebe Theater, denn es macht Spaß.", en: "I love drama, because it is fun." },
-      { de: "Ich hasse Sport, denn es ist unwichtig.", en: "I hate PE, because it is unimportant." },
-      { de: "Ich mag Mathe lieber, denn es ist wichtig.", en: "I prefer maths, because it is important." },
-      { de: "Ich mag Informatik weniger, denn es ist langweilig.", en: "I like IT less, because it is boring." },
-      { de: "Mein Lieblingsfach ist Technik, denn es ist faszinierend.", en: "My favourite subject is technology, because it is fascinating." },
-      { de: "Ich liebe Naturwissenschaften, denn es macht Spaß.", en: "I love sciences, because it is fun." },
-      { de: "Ich hasse Biologie, denn es ist furchtbar.", en: "I hate biology, because it is awful." },
-      { de: "Ich mag Chemie, denn es ist leicht.", en: "I like chemistry, because it is easy." },
-      { de: "Ich mag Physik am liebsten, denn es ist nützlich.", en: "I like physics best, because it is useful." },
-      { de: "Ich mag die Fremdsprache nicht gern, denn es ist nutzlos.", en: "I don't like the foreign language, because it is useless." },
-      { de: "Ich liebe Englisch, denn die Lehrerin ist freundlich.", en: "I love English, because the teacher is friendly." },
-      { de: "Ich hasse Latein, denn der Lehrer ist streng.", en: "I hate Latin, because the teacher is strict." },
-      { de: "Mein Lieblingsfach ist Geschichte, denn der Lehrer ist geduldig.", en: "My favourite subject is history, because the teacher is patient." },
-      { de: "Ich mag Sozialkunde, denn die Lehrerin ist gerecht.", en: "I like social studies, because the teacher is fair." },
-      { de: "Ich mag Politik am wenigsten, denn der Lehrer ist ungerecht.", en: "I like politics the least, because the teacher is unfair." },
-      { de: "Ich liebe Bürgerkunde, denn die Lehrerin ist humorvoll.", en: "I love civil studies, because the teacher is humorous." },
-      { de: "Ich hasse Wirtschaft, denn der Lehrer ist ungeduldig.", en: "I hate economy, because the teacher is impatient." },
-      { de: "Mein Lieblingsfach ist Erdkunde, denn der Lehrer ist humorlos.", en: "My favourite subject is geography, because the teacher is humourless." },
-      { de: "Ich mag Ethik, denn die Lehrerin ist freundlich.", en: "I like ethics, because the teacher is friendly." },
-      { de: "Ich mag Kunst nicht gern, denn der Lehrer ist streng.", en: "I don't like art, because the teacher is strict." }
-    ];
+<!-- GAME OVER -->
+<div id="gameover-screen" class="screen">
+  <div class="gameover-box">
+    <div class="bg-glow"></div>
+    <div class="trophy-icon">&#127942;</div>
+    <h1 class="gameover-title">Zeit abgelaufen!</h1>
+    <p class="gameover-subtitle" id="winner-text"></p>
+    <div class="top-translator" id="top-translator"></div>
+    <div class="final-scores" id="final-scores"></div>
+    <button class="restart-btn" id="restart-btn">&#8634; Neues Spiel starten</button>
+  </div>
+</div>
 
-    // Mögliche Geldbeträge für das Raster (in Euro/Pfund)
-    const REWARD_VALUES = [50, 100, 200, 500, 1000, 2000, 5000];
+<script>
+const SENTENCES=[{de:"Ich liebe Mathe, denn es ist einfach.",en:"I love maths, because it is easy."},{de:"Ich hasse Informatik, denn es ist langweilig.",en:"I hate IT, because it is boring."},{de:"Mein Lieblingsfach ist Technik, denn es ist nützlich.",en:"My favourite subject is technology, because it is useful."},{de:"Ich mag Naturwissenschaften, denn es ist faszinierend.",en:"I like sciences, because it is fascinating."},{de:"Ich mag Biologie am liebsten, denn es ist interessant.",en:"I like biology best, because it is interesting."},{de:"Ich mag Chemie am wenigsten, denn es ist furchtbar.",en:"I like chemistry the least, because it is awful."},{de:"Ich mag Physik nicht gern, denn es ist schwierig.",en:"I don't like physics, because it is difficult."},{de:"Ich liebe die Fremdsprache, denn es ist wichtig.",en:"I love the foreign language, because it is important."},{de:"Ich hasse Englisch, denn es ist unwichtig.",en:"I hate English, because it is unimportant."},{de:"Mein Lieblingsfach ist Latein, denn es macht Spaß.",en:"My favourite subject is Latin, because it is fun."},{de:"Ich mag Geisteswissenschaften, denn es ist leicht.",en:"I like humanities, because it is easy."},{de:"Ich mag Geschichte am wenigsten, denn es macht nicht Spaß.",en:"I like history the least, because it isn't fun."},{de:"Ich mag Sozialkunde lieber, denn es ist nützlich.",en:"I prefer social studies, because it is useful."},{de:"Ich hasse Politik, denn es ist nutzlos.",en:"I hate politics, because it is useless."},{de:"Ich liebe Bürgerkunde, denn es ist interessant.",en:"I love civil studies, because it is interesting."},{de:"Mein Lieblingsfach ist Wirtschaft, denn es ist faszinierend.",en:"My favourite subject is economy, because it is fascinating."},{de:"Ich mag Erdkunde, denn es ist einfach.",en:"I like geography, because it is easy."},{de:"Ich mag Religion nicht gern, denn es ist langweilig.",en:"I don't like religion, because it is boring."},{de:"Ich hasse Ethik, denn es ist schwierig.",en:"I hate ethics, because it is difficult."},{de:"Ich liebe Kunst, denn es macht Spaß.",en:"I love art, because it is fun."},{de:"Mein Lieblingsfach ist Musik, denn es ist wichtig.",en:"My favourite subject is music, because it is important."},{de:"Ich mag Werken, denn es ist nützlich.",en:"I like DT, because it is useful."},{de:"Ich mag Theater am liebsten, denn es ist faszinierend.",en:"I like drama best, because it is fascinating."},{de:"Ich hasse Sport, denn es macht nicht Spaß.",en:"I hate PE, because it isn't fun."},{de:"Ich liebe Mathe, denn es ist nützlich.",en:"I love maths, because it is useful."},{de:"Ich mag Informatik nicht gern, denn es ist schwer.",en:"I don't like IT, because it is difficult."},{de:"Mein Lieblingsfach ist Biologie, denn es ist leicht.",en:"My favourite subject is biology, because it is easy."},{de:"Ich hasse Chemie, denn es ist nutzlos.",en:"I hate chemistry, because it is useless."},{de:"Ich mag Physik, denn es ist interessant.",en:"I like physics, because it is interesting."},{de:"Ich mag Englisch am wenigsten, denn es ist furchtbar.",en:"I like English the least, because it is awful."},{de:"Ich liebe Latein, denn es ist faszinierend.",en:"I love Latin, because it is fascinating."},{de:"Ich hasse Geschichte, denn es ist langweilig.",en:"I hate history, because it is boring."},{de:"Mein Lieblingsfach ist Sozialkunde, denn es ist wichtig.",en:"My favourite subject is social studies, because it is important."},{de:"Ich mag Politik, denn es macht Spaß.",en:"I like politics, because it is fun."},{de:"Ich mag Wirtschaft nicht gern, denn es ist unwichtig.",en:"I don't like economy, because it is unimportant."},{de:"Ich liebe Erdkunde, denn es ist nützlich.",en:"I love geography, because it is useful."},{de:"Ich hasse Religion, denn es ist furchtbar.",en:"I hate religion, because it is awful."},{de:"Mein Lieblingsfach ist Kunst, denn es ist einfach.",en:"My favourite subject is art, because it is easy."},{de:"Ich mag Musik, denn es ist interessant.",en:"I like music, because it is interesting."},{de:"Ich mag Werken am wenigsten, denn es ist schwer.",en:"I like DT the least, because it is difficult."},{de:"Ich liebe Theater, denn es macht Spaß.",en:"I love drama, because it is fun."},{de:"Ich hasse Sport, denn es ist unwichtig.",en:"I hate PE, because it is unimportant."},{de:"Ich mag Mathe lieber, denn es ist wichtig.",en:"I prefer maths, because it is important."},{de:"Ich mag Informatik weniger, denn es ist langweilig.",en:"I like IT less, because it is boring."},{de:"Mein Lieblingsfach ist Technik, denn es ist faszinierend.",en:"My favourite subject is technology, because it is fascinating."},{de:"Ich liebe Naturwissenschaften, denn es macht Spaß.",en:"I love sciences, because it is fun."},{de:"Ich hasse Biologie, denn es ist furchtbar.",en:"I hate biology, because it is awful."},{de:"Ich mag Chemie, denn es ist leicht.",en:"I like chemistry, because it is easy."},{de:"Ich mag Physik am liebsten, denn es ist nützlich.",en:"I like physics best, because it is useful."},{de:"Ich mag die Fremdsprache nicht gern, denn es ist nutzlos.",en:"I don't like the foreign language, because it is useless."},{de:"Ich liebe Englisch, denn die Lehrerin ist freundlich.",en:"I love English, because the teacher is friendly."},{de:"Ich hasse Latein, denn der Lehrer ist streng.",en:"I hate Latin, because the teacher is strict."},{de:"Mein Lieblingsfach ist Geschichte, denn der Lehrer ist geduldig.",en:"My favourite subject is history, because the teacher is patient."},{de:"Ich mag Sozialkunde, denn die Lehrerin ist gerecht.",en:"I like social studies, because the teacher is fair."},{de:"Ich mag Politik am wenigsten, denn der Lehrer ist ungerecht.",en:"I like politics the least, because the teacher is unfair."},{de:"Ich liebe Bürgerkunde, denn die Lehrerin ist humorvoll.",en:"I love civil studies, because the teacher is humorous."},{de:"Ich hasse Wirtschaft, denn der Lehrer ist ungeduldig.",en:"I hate economy, because the teacher is impatient."},{de:"Mein Lieblingsfach ist Erdkunde, denn der Lehrer ist humorlos.",en:"My favourite subject is geography, because the teacher is humourless."},{de:"Ich mag Ethik, denn die Lehrerin ist freundlich.",en:"I like ethics, because the teacher is friendly."},{de:"Ich mag Kunst nicht gern, denn der Lehrer ist streng.",en:"I don't like art, because the teacher is strict."}];
+const REWARD_VALUES=[50,100,200,500,1000,2000,5000];
+const PB=['p0','p1','p2'];
 
-    // Spielerfarben für ein lebendiges Design
-    const PLAYER_COLORS = ['bg-blue-500', 'bg-red-500', 'bg-green-500'];
-    const PLAYER_BORDER_COLORS = ['border-blue-500', 'border-red-500', 'border-green-500'];
-    const PLAYER_TEXT_COLORS = ['text-blue-500', 'text-red-500', 'text-green-500'];
+let players=[{name:'',score:0,correctAnswers:0},{name:'',score:0,correctAnswers:0}];
+let cpi=0,timeLeft=300,timerId=null,curSentence=null,flipped=false,grid=[],showingGrid=false,revealing=false;
 
-    function App() {
-      const [gameState, setGameState] = useState('setup');
-      const [players, setPlayers] = useState([{ name: '', score: 0, correctAnswers: 0 }, { name: '', score: 0, correctAnswers: 0 }]);
-      const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-      const [timeLeft, setTimeLeft] = useState(300);
-      const [currentSentence, setCurrentSentence] = useState(null);
-      const [isFlipped, setIsFlipped] = useState(false);
-      const [grid, setGrid] = useState([]);
-      const [showGrid, setShowGrid] = useState(false);
-      const [isRevealing, setIsRevealing] = useState(false);
+function fmt(s){const m=Math.floor(s/60),ss=s%60;return m+':'+(ss<10?'0':'')+ss;}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function mkGrid(){const g=[];for(let i=0;i<48;i++){const j=Math.random()>.9;g.push({id:i,value:j?REWARD_VALUES[6]:REWARD_VALUES[Math.floor(Math.random()*5)],revealed:false,claimedBy:null});}return shuffle(g);}
+function drawCard(){curSentence=SENTENCES[Math.floor(Math.random()*SENTENCES.length)];flipped=false;}
+function showScr(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 
-      const formatTime = (seconds) => {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}:${s < 10 ? '0' : ''}${s}`;
-      };
+function renderSetup(){
+  const l=document.getElementById('player-list');l.innerHTML='';
+  players.forEach((p,i)=>{
+    const r=document.createElement('div');r.className='player-row';
+    r.innerHTML=`<div class="player-badge ${PB[i]}">${i+1}</div><input class="player-input" type="text" placeholder="Name von Spieler ${i+1}" maxlength="15" value="${p.name}" data-i="${i}">${players.length>2?`<button class="remove-btn" data-i="${i}">&times;</button>`:''}`;
+    l.appendChild(r);
+  });
+  document.getElementById('add-player-btn').style.display=players.length<3?'block':'none';
+  l.querySelectorAll('.player-input').forEach(inp=>inp.addEventListener('input',e=>{players[+e.target.dataset.i].name=e.target.value;}));
+  l.querySelectorAll('.remove-btn').forEach(b=>b.addEventListener('click',e=>{players.splice(+e.target.dataset.i,1);renderSetup();}));
+}
 
-      const initializeGrid = () => {
-        const newGrid = Array(48).fill(null).map((_, index) => {
-          const isJackpot = Math.random() > 0.9;
-          const value = isJackpot
-            ? REWARD_VALUES[REWARD_VALUES.length - 1]
-            : REWARD_VALUES[Math.floor(Math.random() * (REWARD_VALUES.length - 2))];
-          return { id: index, value: value, revealed: false, claimedBy: null };
-        });
-        return newGrid.sort(() => Math.random() - 0.5);
-      };
+document.getElementById('add-player-btn').addEventListener('click',()=>{if(players.length<3){players.push({name:'',score:0,correctAnswers:0});renderSetup();}});
 
-      const drawNextCard = useCallback(() => {
-        const randomIndex = Math.floor(Math.random() * SENTENCES.length);
-        setCurrentSentence(SENTENCES[randomIndex]);
-        setIsFlipped(false);
-      }, []);
+document.getElementById('start-btn').addEventListener('click',()=>{
+  const v=players.filter(p=>p.name.trim());
+  if(v.length<2){alert('Bitte geben Sie mindestens zwei Spielernamen ein.');return;}
+  players=v.map(p=>({...p,score:0,correctAnswers:0}));
+  grid=mkGrid();timeLeft=300;cpi=0;showingGrid=false;drawCard();
+  showScr('play-screen');renderPlay();startTimer();
+});
 
-      const startGame = () => {
-        const validPlayers = players.filter(p => p.name.trim() !== '');
-        if (validPlayers.length < 2) {
-          alert('Bitte geben Sie mindestens zwei Spielernamen ein.');
-          return;
-        }
-        setPlayers(validPlayers.map(p => ({ ...p, score: 0, correctAnswers: 0 })));
-        setGrid(initializeGrid());
-        setGameState('playing');
-        setTimeLeft(300);
-        setCurrentPlayerIndex(0);
-        setShowGrid(false);
-        drawNextCard();
-      };
+function startTimer(){clearInterval(timerId);timerId=setInterval(()=>{timeLeft--;updTimer();if(timeLeft<=0){clearInterval(timerId);showScr('gameover-screen');renderGO();}},1000);}
+function updTimer(){document.getElementById('timer-display').textContent=fmt(timeLeft);const b=document.getElementById('timer-box');timeLeft<60?b.classList.add('urgent'):b.classList.remove('urgent');}
 
-      useEffect(() => {
-        let timer;
-        if (gameState === 'playing' && timeLeft > 0) {
-          timer = setInterval(() => {
-            setTimeLeft(prev => prev - 1);
-          }, 1000);
-        } else if (timeLeft === 0 && gameState === 'playing') {
-          setGameState('gameover');
-        }
-        return () => clearInterval(timer);
-      }, [gameState, timeLeft]);
+function renderPlay(){
+  updTimer();renderScores();
+  const tn=document.getElementById('turn-name');tn.textContent=players[cpi].name;tn.className='name '+PB[cpi];
+  if(showingGrid){document.getElementById('card-mode').style.display='none';document.getElementById('grid-mode').style.display='flex';renderGridUI();}
+  else{document.getElementById('card-mode').style.display='flex';document.getElementById('grid-mode').style.display='none';renderCard();}
+}
 
-      const nextTurn = () => {
-        setCurrentPlayerIndex((prev) => (prev + 1) % players.length);
-        drawNextCard();
-      };
+function renderScores(){
+  const r=document.getElementById('scores-row');r.innerHTML='';
+  players.forEach((p,i)=>{
+    const d=document.createElement('div');d.className=`score-card ${i===cpi?'active-player '+PB[i]:''}`;
+    d.innerHTML=`<span class="score-name ${PB[i]}">${p.name}</span><span class="score-value">£${p.score}</span><span class="score-correct">✓ ${p.correctAnswers}</span>`;
+    r.appendChild(d);
+  });
+}
 
-      const handleAnswer = (correct) => {
-        if (correct) {
-          const newPlayers = [...players];
-          newPlayers[currentPlayerIndex].correctAnswers += 1;
-          setPlayers(newPlayers);
-          setShowGrid(true);
-        } else {
-          nextTurn();
-        }
-      };
+function renderCard(){
+  const fr=document.getElementById('card-front'),bk=document.getElementById('card-back'),ab=document.getElementById('answer-buttons'),fc=document.getElementById('flashcard');
+  document.getElementById('card-en').textContent=curSentence?curSentence.en:'';
+  document.getElementById('card-de').textContent=curSentence?curSentence.de:'';
+  document.getElementById('back-en').textContent=curSentence?curSentence.en:'';
+  fc.className='flashcard';
+  if(flipped){fr.style.display='none';bk.style.display='block';ab.style.display='flex';fc.classList.add('flipped',PB[cpi]);}
+  else{fr.style.display='block';bk.style.display='none';ab.style.display='none';}
+}
 
-      const handleTileClick = (index) => {
-        if (grid[index].revealed || isRevealing) return;
-        setIsRevealing(true);
-        const newGrid = [...grid];
-        newGrid[index].revealed = true;
-        newGrid[index].claimedBy = currentPlayerIndex;
-        setGrid(newGrid);
-        const wonAmount = newGrid[index].value;
-        const newPlayers = [...players];
-        newPlayers[currentPlayerIndex].score += wonAmount;
-        setPlayers(newPlayers);
-        setTimeout(() => {
-          setShowGrid(false);
-          setIsRevealing(false);
-          if (newGrid.every(tile => tile.revealed)) {
-            setGameState('gameover');
-          } else {
-            nextTurn();
-          }
-        }, 2000);
-      };
+document.getElementById('flashcard').addEventListener('click',()=>{if(!flipped&&!showingGrid){flipped=true;renderCard();}});
+document.getElementById('btn-wrong').addEventListener('click',()=>nextTurn());
+document.getElementById('btn-correct').addEventListener('click',()=>{players[cpi].correctAnswers++;showingGrid=true;renderPlay();});
 
-      const updatePlayerName = (index, name) => {
-        const newPlayers = [...players];
-        newPlayers[index].name = name;
-        setPlayers(newPlayers);
-      };
+function nextTurn(){cpi=(cpi+1)%players.length;drawCard();showingGrid=false;renderPlay();}
 
-      const addPlayer = () => {
-        if (players.length < 3) {
-          setPlayers([...players, { name: '', score: 0, correctAnswers: 0 }]);
-        }
-      };
+function renderGridUI(){
+  document.getElementById('grid-player-name').textContent=players[cpi].name;
+  const c=document.getElementById('reward-grid');c.innerHTML='';
+  grid.forEach((t,i)=>{
+    const b=document.createElement('button');
+    if(t.revealed){b.className=`tile revealed claimed-${PB[t.claimedBy]}`;b.textContent='£'+t.value;b.disabled=true;}
+    else{b.className=`tile unrevealed ${PB[cpi]}`;b.textContent='?';b.addEventListener('click',()=>tileClick(i));}
+    c.appendChild(b);
+  });
+}
 
-      const removePlayer = (index) => {
-        if (players.length > 2) {
-          const newPlayers = [...players];
-          newPlayers.splice(index, 1);
-          setPlayers(newPlayers);
-        }
-      };
+function tileClick(i){
+  if(grid[i].revealed||revealing)return;revealing=true;
+  grid[i].revealed=true;grid[i].claimedBy=cpi;
+  players[cpi].score+=grid[i].value;
+  renderGridUI();renderScores();
+  setTimeout(()=>{revealing=false;if(grid.every(t=>t.revealed)){clearInterval(timerId);showScr('gameover-screen');renderGO();}else nextTurn();},2000);
+}
 
-      // --- ANSICHT: SETUP ---
-      if (gameState === 'setup') {
-        return (
-          <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white font-sans">
-            <div className="max-w-md w-full bg-slate-800 rounded-3xl shadow-2xl p-8 border-4 border-slate-700">
-              <div className="text-center mb-8">
-                <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
-                  Wortschatz-Jagd
-                </h1>
-                <p className="text-slate-400">Übersetze laut und gewinne virtuelles Geld!</p>
-              </div>
+function renderGO(){
+  const s=[...players].sort((a,b)=>b.score-a.score),w=s[0];
+  document.getElementById('winner-text').innerHTML=`Der Gewinner ist <strong>${w.name}</strong> mit £${w.score}!`;
+  const mx=Math.max(...players.map(p=>p.correctAnswers)),tn=players.filter(p=>p.correctAnswers===mx).map(p=>p.name);
+  document.getElementById('top-translator').innerHTML=`✓ <strong>Top-Übersetzer (${mx} richtig):</strong> ${tn.join(', ')}`;
+  const c=document.getElementById('final-scores');c.innerHTML='';
+  s.forEach((p,i)=>{
+    const d=document.createElement('div');d.className=`final-row ${i===0?'winner':''}`;
+    d.innerHTML=`<div class="rank">${i+1}</div><div class="info"><div class="pname">${p.name}</div><div class="pcorrect">✓ ${p.correctAnswers} richtig</div></div><div class="pscore">£${p.score}</div>`;
+    c.appendChild(d);
+  });
+}
 
-              <div className="space-y-4 mb-8">
-                {players.map((player, idx) => (
-                  <div key={idx} className="flex items-center space-x-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${PLAYER_COLORS[idx]}`}>
-                      {idx + 1}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder={`Name von Spieler ${idx + 1}`}
-                      className="flex-1 bg-slate-700 border-2 border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-colors"
-                      value={player.name}
-                      onChange={(e) => updatePlayerName(idx, e.target.value)}
-                      maxLength={15}
-                    />
-                    {players.length > 2 && (
-                      <button onClick={() => removePlayer(idx)} className="text-red-400 hover:text-red-300 p-2">
-                        <XCircle size={24} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+document.getElementById('restart-btn').addEventListener('click',()=>{players=[{name:'',score:0,correctAnswers:0},{name:'',score:0,correctAnswers:0}];showScr('setup-screen');renderSetup();});
 
-                {players.length < 3 && (
-                  <button
-                    onClick={addPlayer}
-                    className="w-full py-3 border-2 border-dashed border-slate-600 rounded-xl text-slate-400 hover:text-white hover:border-slate-400 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <Users size={20} />
-                    <span>Dritten Spieler hinzufügen</span>
-                  </button>
-                )}
-              </div>
-
-              <button
-                onClick={startGame}
-                className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-xl shadow-lg transform transition active:scale-95 flex items-center justify-center space-x-2"
-              >
-                <Play size={24} />
-                <span>Spiel Starten</span>
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      // --- ANSICHT: SPIELEN ---
-      if (gameState === 'playing') {
-        const currentPlayer = players[currentPlayerIndex];
-
-        return (
-          <div className="min-h-screen bg-slate-900 flex flex-col p-4 md:p-8 text-white font-sans">
-            {/* Header / HUD */}
-            <header className="flex flex-wrap justify-between items-center bg-slate-800 p-4 rounded-2xl shadow-lg mb-8 border-b-4 border-slate-700">
-              <div className="flex items-center space-x-4">
-                <div className={`flex items-center space-x-2 bg-slate-900 px-4 py-2 rounded-xl border-2 ${timeLeft < 60 ? 'border-red-500 text-red-500 animate-pulse' : 'border-slate-700'}`}>
-                  <Clock size={24} />
-                  <span className="text-2xl font-black font-mono">{formatTime(timeLeft)}</span>
-                </div>
-              </div>
-
-              {/* Spieler Punktestände */}
-              <div className="flex space-x-4 mt-4 md:mt-0">
-                {players.map((p, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex flex-col items-center px-4 py-2 rounded-xl border-2 transition-all ${
-                      idx === currentPlayerIndex
-                        ? `${PLAYER_BORDER_COLORS[idx]} bg-slate-800 scale-110 shadow-lg`
-                        : 'border-slate-700 bg-slate-900 opacity-60'
-                    }`}
-                  >
-                    <span className={`text-sm font-bold ${PLAYER_TEXT_COLORS[idx]}`}>{p.name}</span>
-                    <span className="text-xl font-black">£{p.score}</span>
-                    <div className="flex items-center text-xs text-green-400 mt-1" title="Richtige Antworten">
-                      <CheckCircle size={12} className="mr-1" /> {p.correctAnswers}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </header>
-
-            {/* Hauptbereich */}
-            <main className="flex-1 flex flex-col items-center justify-center">
-
-              {/* Aktueller Spieler Anzeige */}
-              <div className="mb-6 text-center animate-bounce">
-                <span className="text-slate-400 text-lg uppercase tracking-widest">Am Zug:</span>
-                <h2 className={`text-4xl font-black ${PLAYER_TEXT_COLORS[currentPlayerIndex]}`}>
-                  {currentPlayer.name}
-                </h2>
-              </div>
-
-              {!showGrid ? (
-                /* LERNKARTEN-MODUS */
-                <div className="w-full max-w-2xl flex flex-col items-center">
-                  <p className="text-slate-400 mb-4 font-medium text-center">
-                    Übersetze diesen Satz laut ins Deutsche, klicke dann auf die Karte!
-                  </p>
-
-                  <div
-                    onClick={() => !isFlipped && setIsFlipped(true)}
-                    className={`w-full bg-slate-800 rounded-3xl p-10 md:p-16 cursor-pointer transform transition-all duration-500 border-4 ${isFlipped ? PLAYER_BORDER_COLORS[currentPlayerIndex] : 'border-slate-600 hover:border-slate-500 hover:scale-[1.02]'} shadow-2xl relative flex items-center justify-center min-h-[300px] text-center`}
-                  >
-                    {!isFlipped ? (
-                      <h3 className="text-3xl md:text-5xl font-bold leading-tight">
-                        {currentSentence?.en}
-                      </h3>
-                    ) : (
-                      <div className="flex flex-col items-center space-y-6 animate-fadeIn">
-                        <span className="text-sm font-bold uppercase tracking-wider text-slate-400">Lösung:</span>
-                        <h3 className="text-3xl md:text-4xl font-bold text-green-400 leading-tight">
-                          {currentSentence?.de}
-                        </h3>
-                      </div>
-                    )}
-
-                    {!isFlipped && (
-                      <div className="absolute bottom-6 left-0 right-0 text-center opacity-50 text-sm flex justify-center items-center space-x-2">
-                        <RotateCcw size={16} />
-                        <span>Klicken zum Umdrehen</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Feedback-Buttons */}
-                  {isFlipped && (
-                    <div className="flex space-x-6 mt-8 w-full">
-                      <button
-                        onClick={() => handleAnswer(false)}
-                        className="flex-1 py-4 bg-red-600/20 text-red-500 border-2 border-red-500 hover:bg-red-500 hover:text-white rounded-2xl font-bold text-2xl transition-all flex items-center justify-center space-x-2"
-                      >
-                        <XCircle size={28} />
-                        <span>Falsch</span>
-                      </button>
-                      <button
-                        onClick={() => handleAnswer(true)}
-                        className="flex-1 py-4 bg-green-600/20 text-green-500 border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-2xl font-bold text-2xl transition-all flex items-center justify-center space-x-2"
-                      >
-                        <CheckCircle size={28} />
-                        <span>Richtig!</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* RASTER-MODUS (Belohnung) */
-                <div className="w-full max-w-4xl flex flex-col items-center animate-fadeIn">
-                  <div className="text-center mb-6">
-                    <h3 className="text-3xl font-black text-yellow-400 mb-2 flex items-center justify-center space-x-2">
-                      <DollarSign size={36} />
-                      <span>Kies ein Feld, {currentPlayer.name}!</span>
-                    </h3>
-                    <p className="text-slate-400">Hinter jedem Feld versteckt sich ein Geldbetrag.</p>
-                  </div>
-
-                  <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 md:gap-3 w-full bg-slate-800 p-4 rounded-3xl border-4 border-slate-700 shadow-2xl">
-                    {grid.map((tile, index) => (
-                      <button
-                        key={tile.id}
-                        onClick={() => handleTileClick(index)}
-                        disabled={tile.revealed || isRevealing}
-                        className={`aspect-square rounded-xl font-black text-lg md:text-xl flex items-center justify-center transition-all duration-500 transform ${
-                          !tile.revealed
-                            ? `${PLAYER_COLORS[currentPlayerIndex]} hover:scale-110 shadow-lg cursor-pointer`
-                            : `bg-slate-900 border-2 ${PLAYER_BORDER_COLORS[tile.claimedBy]} text-yellow-400 scale-95`
-                        }`}
-                      >
-                        {tile.revealed ? `£${tile.value}` : '?'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </main>
-          </div>
-        );
-      }
-
-      // --- ANSICHT: GAME OVER ---
-      if (gameState === 'gameover') {
-        const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-        const winner = sortedPlayers[0];
-        const maxCorrect = Math.max(...players.map(p => p.correctAnswers));
-        const topTranslators = players.filter(p => p.correctAnswers === maxCorrect).map(p => p.name);
-
-        return (
-          <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white font-sans">
-            <div className="max-w-2xl w-full bg-slate-800 rounded-3xl shadow-2xl p-10 border-4 border-yellow-500 text-center relative overflow-hidden">
-              <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-yellow-300 via-transparent to-transparent"></div>
-
-              <Trophy size={80} className="mx-auto text-yellow-400 mb-6 animate-bounce" />
-
-              <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-                Zeit abgelaufen!
-              </h1>
-              <p className="text-2xl text-slate-300 mb-6">
-                Der Gewinner ist <span className="font-bold text-white">{winner.name}</span> mit £{winner.score}!
-              </p>
-
-              <div className="bg-slate-700/50 rounded-xl p-4 mb-8 inline-block border border-slate-600">
-                <p className="text-green-400 flex items-center justify-center space-x-2">
-                  <CheckCircle size={20} />
-                  <span>
-                    <strong>Top-Übersetzer ({maxCorrect} richtig):</strong> {topTranslators.join(', ')}
-                  </span>
-                </p>
-              </div>
-
-              <div className="flex flex-col space-y-4 mb-10 max-w-md mx-auto w-full">
-                {sortedPlayers.map((p, idx) => (
-                  <div key={idx} className={`flex items-center justify-between p-4 rounded-2xl border-2 ${idx === 0 ? 'bg-yellow-500/20 border-yellow-500' : 'bg-slate-700/50 border-slate-600'}`}>
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${idx === 0 ? 'bg-yellow-500 text-black' : 'bg-slate-600'}`}>
-                        {idx + 1}
-                      </div>
-                      <div className="flex flex-col text-left">
-                        <span className="text-xl font-bold">{p.name}</span>
-                        <span className="text-sm text-green-400 flex items-center mt-1"><CheckCircle size={14} className="mr-1"/> {p.correctAnswers} richtig</span>
-                      </div>
-                    </div>
-                    <span className="text-2xl font-black">£{p.score}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setGameState('setup')}
-                className="px-8 py-4 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xl transition flex items-center justify-center mx-auto space-x-2"
-              >
-                <RotateCcw size={24} />
-                <span>Neues Spiel starten</span>
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      return null;
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
+renderSetup();
+</script>
 </body>
 </html>
